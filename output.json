@@ -1,0 +1,143 @@
+[
+  {
+    "id": "R1",
+    "decision": "block",
+    "applied_policies": [
+      "MED_STRICT",
+      "MED_BLOCK"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=medical, confidence=0.96"
+  },
+  {
+    "id": "R2",
+    "decision": "block",
+    "applied_policies": [
+      "MED_STRICT",
+      "MED_BLOCK"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=medical, confidence=0.82"
+  },
+  {
+    "id": "R3",
+    "decision": "block",
+    "applied_policies": [
+      "MED_STRICT",
+      "MED_BLOCK"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=medical, confidence=0.6"
+  },
+  {
+    "id": "R4",
+    "decision": "block",
+    "applied_policies": [
+      "FIN_STRICT",
+      "FIN_RELAXED"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=financial, confidence=0.93"
+  },
+  {
+    "id": "R5",
+    "decision": "block",
+    "applied_policies": [
+      "FIN_STRICT",
+      "FIN_RELAXED"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=financial, confidence=0.88"
+  },
+  {
+    "id": "R6",
+    "decision": "block",
+    "applied_policies": [
+      "FIN_STRICT",
+      "FIN_RELAXED"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=financial, confidence=0.81"
+  },
+  {
+    "id": "R7",
+    "decision": "block",
+    "applied_policies": [
+      "FIN_STRICT",
+      "FIN_RELAXED"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=financial, confidence=0.65"
+  },
+  {
+    "id": "R8",
+    "decision": "block",
+    "applied_policies": [
+      "GEN_ALLOW",
+      "GEN_SANITIZE"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=general, confidence=0.92"
+  },
+  {
+    "id": "R9",
+    "decision": "block",
+    "applied_policies": [
+      "GEN_ALLOW",
+      "GEN_SANITIZE"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=general, confidence=0.75"
+  },
+  {
+    "id": "R10",
+    "decision": "block",
+    "applied_policies": [
+      "GEN_ALLOW",
+      "GEN_SANITIZE"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=general, confidence=0.55"
+  },
+  {
+    "id": "R11",
+    "decision": "block",
+    "applied_policies": [
+      "GEN_ALLOW",
+      "GEN_SANITIZE"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=general, confidence=0.4"
+  },
+  {
+    "id": "R12",
+    "decision": "block",
+    "applied_policies": [
+      "GEN_ALLOW",
+      "GEN_SANITIZE"
+    ],
+    "final_output": "Output blocked",
+    "reason": "risk=general, confidence=0.2"
+  },
+  {
+    "id": "R13",
+    "decision": "block",
+    "applied_policies": [],
+    "final_output": "Output blocked",
+    "reason": "no matching policy"
+  },
+  {
+    "id": "R14",
+    "decision": "block",
+    "applied_policies": [],
+    "final_output": "Output blocked",
+    "reason": "no matching policy"
+  },
+  {
+    "id": "R15",
+    "decision": "block",
+    "applied_policies": [],
+    "final_output": "Output blocked",
+    "reason": "no matching policy"
+  }
+]
