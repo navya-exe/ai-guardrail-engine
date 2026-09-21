@@ -1,63 +1,59 @@
 [
   {
     "id": "R1",
-    "decision": "block",
+    "decision": "escalate",
     "applied_policies": [
       "MED_STRICT",
       "MED_BLOCK"
     ],
-    "final_output": "Output blocked",
-    "reason": "risk=medical, confidence=0.96"
+    "final_output": "Sent for human review",
+    "reason": "policy=MED_STRICT, risk=medical, confidence=0.96"
   },
   {
     "id": "R2",
     "decision": "block",
     "applied_policies": [
-      "MED_STRICT",
       "MED_BLOCK"
     ],
     "final_output": "Output blocked",
-    "reason": "risk=medical, confidence=0.82"
+    "reason": "policy=MED_BLOCK, risk=medical, confidence=0.82"
   },
   {
     "id": "R3",
     "decision": "block",
     "applied_policies": [
-      "MED_STRICT",
       "MED_BLOCK"
     ],
     "final_output": "Output blocked",
-    "reason": "risk=medical, confidence=0.6"
+    "reason": "policy=MED_BLOCK, risk=medical, confidence=0.6"
   },
   {
     "id": "R4",
-    "decision": "block",
+    "decision": "sanitize",
     "applied_policies": [
       "FIN_STRICT",
       "FIN_RELAXED"
     ],
-    "final_output": "Output blocked",
-    "reason": "risk=financial, confidence=0.93"
+    "final_output": "This response cannot be shown. Please consult a qualified professional.",
+    "reason": "policy=FIN_STRICT, risk=financial, confidence=0.93"
   },
   {
     "id": "R5",
-    "decision": "block",
+    "decision": "allow",
     "applied_policies": [
-      "FIN_STRICT",
       "FIN_RELAXED"
     ],
-    "final_output": "Output blocked",
-    "reason": "risk=financial, confidence=0.88"
+    "final_output": null,
+    "reason": "policy=FIN_RELAXED, risk=financial, confidence=0.88"
   },
   {
     "id": "R6",
-    "decision": "block",
+    "decision": "allow",
     "applied_policies": [
-      "FIN_STRICT",
       "FIN_RELAXED"
     ],
-    "final_output": "Output blocked",
-    "reason": "risk=financial, confidence=0.81"
+    "final_output": null,
+    "reason": "policy=FIN_RELAXED, risk=financial, confidence=0.81"
   },
   {
     "id": "R7",
@@ -67,57 +63,54 @@
       "FIN_RELAXED"
     ],
     "final_output": "Output blocked",
-    "reason": "risk=financial, confidence=0.65"
+    "reason": "no policy threshold met: risk=financial, confidence=0.65"
   },
   {
     "id": "R8",
-    "decision": "block",
+    "decision": "allow",
     "applied_policies": [
       "GEN_ALLOW",
       "GEN_SANITIZE"
     ],
-    "final_output": "Output blocked",
-    "reason": "risk=general, confidence=0.92"
+    "final_output": null,
+    "reason": "policy=GEN_ALLOW, risk=general, confidence=0.92"
   },
   {
     "id": "R9",
-    "decision": "block",
+    "decision": "allow",
     "applied_policies": [
       "GEN_ALLOW",
       "GEN_SANITIZE"
     ],
-    "final_output": "Output blocked",
-    "reason": "risk=general, confidence=0.75"
+    "final_output": null,
+    "reason": "policy=GEN_ALLOW, risk=general, confidence=0.75"
   },
   {
     "id": "R10",
-    "decision": "block",
+    "decision": "sanitize",
     "applied_policies": [
-      "GEN_ALLOW",
       "GEN_SANITIZE"
     ],
-    "final_output": "Output blocked",
-    "reason": "risk=general, confidence=0.55"
+    "final_output": "This response cannot be shown. Please consult a qualified professional.",
+    "reason": "policy=GEN_SANITIZE, risk=general, confidence=0.55"
   },
   {
     "id": "R11",
-    "decision": "block",
+    "decision": "sanitize",
     "applied_policies": [
-      "GEN_ALLOW",
       "GEN_SANITIZE"
     ],
-    "final_output": "Output blocked",
-    "reason": "risk=general, confidence=0.4"
+    "final_output": "This response cannot be shown. Please consult a qualified professional.",
+    "reason": "policy=GEN_SANITIZE, risk=general, confidence=0.4"
   },
   {
     "id": "R12",
-    "decision": "block",
+    "decision": "sanitize",
     "applied_policies": [
-      "GEN_ALLOW",
       "GEN_SANITIZE"
     ],
-    "final_output": "Output blocked",
-    "reason": "risk=general, confidence=0.2"
+    "final_output": "This response cannot be shown. Please consult a qualified professional.",
+    "reason": "policy=GEN_SANITIZE, risk=general, confidence=0.2"
   },
   {
     "id": "R13",
