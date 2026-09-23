@@ -1,12 +1,13 @@
 import json
 
-
 def load_json(path):
     try:
         with open(path, "r") as f:
             return json.load(f)
-    except Exception:
-        return {}
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {path}")
+    except json.JSONDecodeError:
+        raise ValueError(f"Invalid JSON file: {path}")
 
 
 def match_policies(policies, risk):
