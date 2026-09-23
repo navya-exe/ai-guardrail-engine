@@ -1,20 +1,18 @@
 import json
-ACTION_PRIORITY = {
-    "allow": 1,
-    "sanitize": 2,
-    "escalate": 3,
-    "block": 4
-}
 
 def load_json(path):
     try:
         with open(path, "r") as f:
             return json.load(f)
-    except Exception:
-        return {}
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {path}")
+    except json.JSONDecodeError:
+        raise ValueError(f"Invalid JSON file: {path}")
+
 
 def match_policies(policies, risk):
     return [p for p in policies if p.get("risk") == risk]
+
 
 def evaluate_policy(policy, confidence):
     min_conf = policy.get("min_confidence", 1.0)
@@ -22,28 +20,20 @@ def evaluate_policy(policy, confidence):
 
     if confidence >= min_conf:
         return actions
-    else:
-        return ["block"]
 
-
-def resolve_action(action_lists, default_action):
-    final_action = default_action
-
-    for actions in action_lists:
-        for action in actions:
-            if ACTION_PRIORITY.get(action, 0) > ACTION_PRIORITY.get(final_action, 0):
-                final_action = action
-
-    return final_action
+    return []
 
 
 def final_output_for(action):
     if action == "allow":
         return None
+
     if action == "sanitize":
         return "This response cannot be shown. Please consult a qualified professional."
+
     if action == "escalate":
         return "Sent for human review"
+
     return "Output blocked"
 
 
@@ -63,16 +53,42 @@ def process_inputs(policies_data, inputs_data):
             decision = default_action
             applied = []
             reason = "no matching policy"
+
         else:
-            action_lists = []
-            applied = []
+            applicable = []
 
             for policy in matched:
-                action_lists.append(evaluate_policy(policy, confidence))
-                applied.append(policy.get("id"))
+                actions = evaluate_policy(policy, confidence)
 
-            decision = resolve_action(action_lists, default_action)
-            reason = f"risk={risk}, confidence={confidence}"
+                if actions:
+                    applicable.append((policy, actions))
+
+            if not applicable:
+                decision = default_action
+                applied = [policy.get("id") for policy in matched]
+
+                reason = (
+                    f"no policy threshold met: "
+                    f"risk={risk}, confidence={confidence}"
+                )
+
+            else:
+                selected_policy, actions = max(
+                    applicable,
+                    key=lambda item: item[0].get("min_confidence", 0.0)
+                )
+
+                decision = actions[0]
+
+                applied = [
+                    policy.get("id")
+                    for policy, _ in applicable
+                ]
+
+                reason = (
+                    f"policy={selected_policy.get('id')}, "
+                    f"risk={risk}, confidence={confidence}"
+                )
 
         results.append({
             "id": item.get("id"),
@@ -90,12 +106,12 @@ def write_output(path, data):
         json.dump(data, f, indent=2)
 
 
-
 if __name__ == "__main__":
-    policies_data = load_json("policies.json")
-    inputs_data = load_json("inputs.json")
+    policies_data = load_json("config/policies.json")
+    inputs_data = load_json("data/inputs.json")
 
     results = process_inputs(policies_data, inputs_data)
-    write_output("output.json", results)
 
-    print("Done. output.json generated.")
+    write_output("examples/output.json", results)
+
+    print("Done. examples/output.json generated.")
