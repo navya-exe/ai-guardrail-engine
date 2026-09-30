@@ -1,5 +1,13 @@
 import json
 
+
+VALID_ACTIONS = {"allow", "sanitize", "escalate", "block"}
+
+
+class PolicyError(ValueError):
+    """Raised when guardrail input or policy configuration is invalid."""
+
+
 def load_json(path):
     try:
         with open(path, "r") as f:
@@ -8,6 +16,124 @@ def load_json(path):
         raise FileNotFoundError(f"File not found: {path}")
     except json.JSONDecodeError:
         raise ValueError(f"Invalid JSON file: {path}")
+
+
+def validate_inputs(inputs):
+    if not isinstance(inputs, list):
+        raise PolicyError("Inputs must be a list.")
+
+    for index, item in enumerate(inputs):
+        if not isinstance(item, dict):
+            raise PolicyError(
+                f"Input at index {index} must be an object."
+            )
+
+        required_fields = {"id", "risk", "confidence"}
+        missing = required_fields - item.keys()
+
+        if missing:
+            raise PolicyError(
+                f"Input at index {index} is missing required fields: "
+                f"{sorted(missing)}"
+            )
+
+        confidence = item["confidence"]
+
+        if isinstance(confidence, bool) or not isinstance(
+            confidence, (int, float)
+        ):
+            raise PolicyError(
+                f"Input '{item['id']}' confidence must be a number."
+            )
+
+        if not 0.0 <= confidence <= 1.0:
+            raise PolicyError(
+                f"Input '{item['id']}' confidence must be between "
+                f"0.0 and 1.0."
+            )
+
+
+def validate_policies(policies_data):
+    if not isinstance(policies_data, dict):
+        raise PolicyError("Policy configuration must be an object.")
+
+    policies = policies_data.get("policies")
+
+    if not isinstance(policies, list):
+        raise PolicyError("'policies' must be a list.")
+
+    if not policies:
+        raise PolicyError("Policy list cannot be empty.")
+
+    default_action = policies_data.get("default_action", "block")
+
+    if default_action not in VALID_ACTIONS:
+        raise PolicyError(
+            f"Invalid default action: {default_action}. "
+            f"Valid actions: {sorted(VALID_ACTIONS)}"
+        )
+
+    policy_ids = set()
+
+    for index, policy in enumerate(policies):
+        if not isinstance(policy, dict):
+            raise PolicyError(
+                f"Policy at index {index} must be an object."
+            )
+
+        required_fields = {
+            "id",
+            "risk",
+            "min_confidence",
+            "allowed_actions",
+        }
+
+        missing = required_fields - policy.keys()
+
+        if missing:
+            raise PolicyError(
+                f"Policy at index {index} is missing required fields: "
+                f"{sorted(missing)}"
+            )
+
+        policy_id = policy["id"]
+
+        if policy_id in policy_ids:
+            raise PolicyError(
+                f"Duplicate policy ID: {policy_id}"
+            )
+
+        policy_ids.add(policy_id)
+
+        min_confidence = policy["min_confidence"]
+
+        if isinstance(min_confidence, bool) or not isinstance(
+            min_confidence, (int, float)
+        ):
+            raise PolicyError(
+                f"Policy '{policy_id}' min_confidence must be a number."
+            )
+
+        if not 0.0 <= min_confidence <= 1.0:
+            raise PolicyError(
+                f"Policy '{policy_id}' min_confidence must be between "
+                f"0.0 and 1.0."
+            )
+
+        actions = policy["allowed_actions"]
+
+        if not isinstance(actions, list) or not actions:
+            raise PolicyError(
+                f"Policy '{policy_id}' must contain at least one action."
+            )
+
+        invalid_actions = set(actions) - VALID_ACTIONS
+
+        if invalid_actions:
+            raise PolicyError(
+                f"Policy '{policy_id}' contains invalid actions: "
+                f"{sorted(invalid_actions)}"
+            )
 
 
 def match_policies(policies, risk):
@@ -38,14 +164,17 @@ def final_output_for(action):
 
 
 def process_inputs(policies_data, inputs_data):
+    validate_policies(policies_data)
+    validate_inputs(inputs_data)
+
     results = []
 
-    policies = policies_data.get("policies", [])
+    policies = policies_data["policies"]
     default_action = policies_data.get("default_action", "block")
 
     for item in inputs_data:
-        risk = item.get("risk")
-        confidence = item.get("confidence", 0.0)
+        risk = item["risk"]
+        confidence = item["confidence"]
 
         matched = match_policies(policies, risk)
 
@@ -65,7 +194,7 @@ def process_inputs(policies_data, inputs_data):
 
             if not applicable:
                 decision = default_action
-                applied = [policy.get("id") for policy in matched]
+                applied = [policy["id"] for policy in matched]
 
                 reason = (
                     f"no policy threshold met: "
@@ -81,17 +210,17 @@ def process_inputs(policies_data, inputs_data):
                 decision = actions[0]
 
                 applied = [
-                    policy.get("id")
+                    policy["id"]
                     for policy, _ in applicable
                 ]
 
                 reason = (
-                    f"policy={selected_policy.get('id')}, "
+                    f"policy={selected_policy['id']}, "
                     f"risk={risk}, confidence={confidence}"
                 )
 
         results.append({
-            "id": item.get("id"),
+            "id": item["id"],
             "decision": decision,
             "applied_policies": applied,
             "final_output": final_output_for(decision),

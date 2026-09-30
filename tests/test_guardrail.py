@@ -1,4 +1,4 @@
-from src.guardrail import process_inputs
+from src.guardrail import process_inputs, PolicyError
 
 
 POLICIES = {
@@ -43,6 +43,10 @@ POLICIES = {
     "default_action": "block"
 }
 
+
+# --------------------------------------------------
+# Existing behavior tests
+# --------------------------------------------------
 
 def test_allow():
     inputs = [
@@ -144,3 +148,133 @@ def test_multiple_matching_policies():
     assert "MED_STRICT" in result["applied_policies"]
     assert "MED_BLOCK" in result["applied_policies"]
     assert result["reason"].startswith("policy=MED_STRICT")
+
+
+# --------------------------------------------------
+# Step 1: Input and policy validation tests
+# --------------------------------------------------
+
+def test_confidence_below_zero():
+    inputs = [
+        {
+            "id": "T8",
+            "risk": "general",
+            "confidence": -0.1
+        }
+    ]
+
+    try:
+        process_inputs(POLICIES, inputs)
+        assert False, "Expected PolicyError"
+    except PolicyError as exc:
+        assert "between 0.0 and 1.0" in str(exc)
+
+
+def test_confidence_above_one():
+    inputs = [
+        {
+            "id": "T9",
+            "risk": "general",
+            "confidence": 1.1
+        }
+    ]
+
+    try:
+        process_inputs(POLICIES, inputs)
+        assert False, "Expected PolicyError"
+    except PolicyError as exc:
+        assert "between 0.0 and 1.0" in str(exc)
+
+
+def test_missing_required_input_field():
+    inputs = [
+        {
+            "id": "T10",
+            "risk": "general"
+        }
+    ]
+
+    try:
+        process_inputs(POLICIES, inputs)
+        assert False, "Expected PolicyError"
+    except PolicyError as exc:
+        assert "confidence" in str(exc)
+
+
+def test_duplicate_policy_id():
+    policies = {
+        "policies": [
+            {
+                "id": "DUPLICATE",
+                "risk": "general",
+                "allowed_actions": ["allow"],
+                "min_confidence": 0.5
+            },
+            {
+                "id": "DUPLICATE",
+                "risk": "medical",
+                "allowed_actions": ["block"],
+                "min_confidence": 0.0
+            }
+        ],
+        "default_action": "block"
+    }
+
+    try:
+        process_inputs(policies, [])
+        assert False, "Expected PolicyError"
+    except PolicyError as exc:
+        assert "Duplicate policy ID" in str(exc)
+
+
+def test_empty_policy_list():
+    policies = {
+        "policies": [],
+        "default_action": "block"
+    }
+
+    try:
+        process_inputs(policies, [])
+        assert False, "Expected PolicyError"
+    except PolicyError as exc:
+        assert "Policy list cannot be empty" in str(exc)
+
+
+def test_invalid_action():
+    policies = {
+        "policies": [
+            {
+                "id": "BAD_ACTION",
+                "risk": "general",
+                "allowed_actions": ["something_invalid"],
+                "min_confidence": 0.5
+            }
+        ],
+        "default_action": "block"
+    }
+
+    try:
+        process_inputs(policies, [])
+        assert False, "Expected PolicyError"
+    except PolicyError as exc:
+        assert "invalid actions" in str(exc)
+
+
+def test_invalid_policy_confidence():
+    policies = {
+        "policies": [
+            {
+                "id": "BAD_CONF",
+                "risk": "general",
+                "allowed_actions": ["allow"],
+                "min_confidence": 1.5
+            }
+        ],
+        "default_action": "block"
+    }
+
+    try:
+        process_inputs(policies, [])
+        assert False, "Expected PolicyError"
+    except PolicyError as exc:
+        assert "between 0.0 and 1.0" in str(exc)
