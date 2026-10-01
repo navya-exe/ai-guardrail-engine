@@ -1,6 +1,5 @@
 import json
 
-
 VALID_ACTIONS = {"allow", "sanitize", "escalate", "block"}
 
 ACTION_PRIORITY = {

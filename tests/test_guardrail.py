@@ -1,5 +1,4 @@
-from guardrail import process_inputs, PolicyError, load_json
-
+from guardrail import PolicyError, load_json, process_inputs
 
 POLICIES = {
     "policies": [

@@ -1,1142 +1,415 @@
-\# AI Guardrail Engine
-
-
-
-A lightweight, policy-driven AI guardrail engine that evaluates AI-generated outputs using risk categories and confidence thresholds.
-
-
-
-The system determines how an output should be handled using four possible actions:
-
-
-
-\- Allow
-
-\- Sanitize
-
-\- Escalate
-
-\- Block
-
-
-
-The project demonstrates how configurable policy rules can be used to create a deterministic decision layer around AI-generated content.
-
-
-
-\---
-
-
-
-\## Introduction
-
-
-
-Modern AI systems can generate responses that require different levels of handling depending on their risk category and the confidence associated with the classification.
-
-
-
-For example:
-
-
-
-\- A high-confidence general response may be allowed.
-
-\- A financial response may require sanitization.
-
-\- A high-confidence medical response may require human review.
-
-\- An unknown risk category may be blocked by default.
-
-
-
-This project implements a small policy evaluation engine that makes these decisions using configurable policies rather than hard-coded decision rules.
-
-
-
-The engine does not generate or classify the AI response itself.
-
-
-
-Instead, it acts as a decision layer that receives:
-
-
-
-1\. A risk category
-
-2\. A confidence score
-
-3\. A set of configurable policies
-
-
-
-and produces a structured decision.
-
-
-
-\### High-level flow
-
-
-
-```text
-
-Input
-
-&#x20; |
-
-&#x20; v
-
-Risk Category
-
-&#x20; |
-
-&#x20; v
-
-Match Policies
-
-&#x20; |
-
-&#x20; v
-
-Check Confidence Threshold
-
-&#x20; |
-
-&#x20; v
-
-Select Applicable Policy
-
-&#x20; |
-
-&#x20; v
-
-Determine Action
-
-&#x20; |
-
-&#x20; v
-
-Structured Output
-
-
-
-
+AI Guardrail Engine
+A lightweight, policy-driven AI safety layer for evaluating AI-generated outputs against configurable risk policies and confidence thresholds.
+The engine provides deterministic decisions such as allow, sanitize, escalate, or block based on structured risk and confidence inputs.
+
+Overview
+
+Modern AI applications need a reliable decision layer between model output and the end user.
+An AI model may produce content that requires different handling depending on:
+- Risk category
+- Classification confidence
+- Configured policy thresholds
+- Default safety behaviour
+
+The AI Guardrail Engine separates this policy enforcement logic from the AI model itself.
+The current system accepts a risk category and confidence score, evaluates the configured policies, and produces a structured decision.
+
+                    Input
+                      │
+                      ▼
+             Risk + Confidence
+                      │
+                      ▼
+             Input Validation
+                      │
+                      ▼
+               Match Policies
+                      │
+                      ▼
+            Check Confidence
+                      │
+                      ▼
+             Select Policy
+                      │
+                      ▼
+             Resolve Action
+                      │
+          ┌───────────┼───────────┐
+          ▼           ▼           ▼
+        Allow      Sanitize    Escalate
+                      │
+                      ▼
+                    Block
 
 Key Features
 
-1\. Policy-driven evaluation
-
-
-
-Policies are stored separately from the Python implementation in:
-
-
-
+Policy-driven decisions
+Policies are stored separately from the application logic in:
 config/policies.json
-
-
-
-This allows policy behavior to be changed without modifying the core Python logic.
-
-
-
-2\. Risk-based policy matching
-
-
-
-Each input contains a risk category such as:
-
-
-
-medical
-
-financial
-
-general
-
-unknown
-
-
-
-The engine finds policies associated with the corresponding risk category.
-
-
-
-3\. Confidence thresholds
-
-
-
-Each policy defines a minimum confidence threshold.
-
-
-
-For example:
-
-
-
-{
-
-&#x20;   "id": "MED\_STRICT",
-
-&#x20;   "risk": "medical",
-
-&#x20;   "allowed\_actions": \["escalate"],
-
-&#x20;   "min\_confidence": 0.95
-
-}
-
-
-
-This policy applies when:
-
-
-
-confidence >= 0.95
-
-4\. Multiple actions
-
-
-
-The engine supports four actions:
-
-
-
-allow
-
-sanitize
-
-escalate
-
-block
-
-5\. Default blocking behavior
-
-
-
-If no policy matches an input, or if no matching policy satisfies its confidence threshold, the engine falls back to:
-
-
-
-block
-
-
-
-This provides a deterministic fallback for unsupported or low-confidence cases.
-
-
-
-Project Structure
-
-ai-guardrail-engine/
-
-|
-
-├── src/
-
-│   └── guardrail.py
-
-|
-
-├── config/
-
-│   └── policies.json
-
-|
-
-├── data/
-
-│   └── inputs.json
-
-|
-
-├── tests/
-
-│   └── test\_guardrail.py
-
-|
-
-├── examples/
-
-│   └── output.json
-
-|
-
-├── README.md
-
-├── requirements.txt
-
-├── .gitignore
-
-└── LICENSE
-
-Directory Explanation
-
-src/
-
-
-
-Contains the main Python implementation:
-
-
-
-src/guardrail.py
-
-
-
-This contains the core policy evaluation logic.
-
-
-
-config/
-
-
-
-Contains policy configuration:
-
-
-
-config/policies.json
-
-
-
-Policies are kept separate from the application logic so they can be modified independently.
-
-
-
-data/
-
-
-
-Contains example inputs:
-
-
-
-data/inputs.json
-
-
-
-Each input contains a risk category and confidence score.
-
-
-
-Example:
-
-
-
-{
-
-&#x20;   "id": "R1",
-
-&#x20;   "risk": "medical",
-
-&#x20;   "output": "You should take this medicine daily",
-
-&#x20;   "confidence": 0.96
-
-}
-
-tests/
-
-
-
-Contains automated tests:
-
-
-
-tests/test\_guardrail.py
-
-
-
-The tests verify the main decision paths of the engine.
-
-
-
-examples/
-
-
-
-Contains generated example output:
-
-
-
-examples/output.json
-
-
-
-This provides a sample of the engine's decisions.
-
-
-
-How the Policy Engine Works
-
-
-
-The policy evaluation process consists of several steps.
-
-
-
-Step 1 — Read the input
-
-
-
-The engine extracts the risk category and confidence score.
-
-
-
-For example:
-
-
-
-risk = medical
-
-confidence = 0.96
-
-Step 2 — Match policies
-
-
-
-The engine finds all policies associated with the risk category.
-
-
-
-For:
-
-
-
-risk = medical
-
-
-
-the matching policies are:
-
-
-
-MED\_STRICT
-
-MED\_BLOCK
-
-Step 3 — Check confidence thresholds
-
-
-
-Each matching policy is evaluated independently.
-
-
-
-For:
-
-
-
-confidence = 0.96
-
-
-
-the engine checks:
-
-
-
-MED\_STRICT
-
-0.96 >= 0.95
-
-True
-
-
-
-and:
-
-
-
-MED\_BLOCK
-
-0.96 >= 0.00
-
-True
-
-
-
-Both policies are applicable.
-
-
-
-Step 4 — Select the most specific applicable policy
-
-
-
-When multiple policies apply, the engine selects the applicable policy with the highest minimum confidence threshold.
-
-
-
-Therefore:
-
-
-
-MED\_STRICT → 0.95
-
-MED\_BLOCK  → 0.00
-
-
-
-results in:
-
-
-
-MED\_STRICT
-
-
-
-being selected.
-
-
-
-Its configured action is:
-
-
-
-escalate
-
-Why the Policy Logic Was Changed
-
-
-
-The original implementation used an action-priority system:
-
-
-
+This allows policy behavior to be changed without modifying the core engine.
+Confidence-based policy evaluation
+Every policy defines a minimum confidence threshold.
+A policy becomes applicable when:
+confidence >= min_confidence
+Four supported actions
+Action	Behavior
+allow	Permit the output
+sanitize	Replace the output with a safer response
+escalate	Send the case for human review
+block	Prevent the output from being shown
+
+
+Deterministic policy resolution
+When multiple policies match the same risk category, the engine:
+1. Matches policies by risk.
+2. Checks confidence thresholds.
+3. Removes policies whose thresholds are not satisfied.
+4. Selects the applicable policy with the highest threshold.
+5. Uses that policy's configured action.
+If multiple applicable policies have the same threshold, action priority is used:
 allow < sanitize < escalate < block
-
-
-
-This created a problem when multiple policies matched the same risk category.
-
-
-
-For example:
-
-
-
-MED\_STRICT
-
-threshold = 0.95
-
-action = escalate
-
-
-
-MED\_BLOCK
-
-threshold = 0.00
-
-action = block
-
-
-
-For an input with:
-
-
-
-confidence = 0.96
-
-
-
-both policies matched.
-
-
-
-Because block had the highest priority, the original implementation could return:
-
-
-
-block
-
-
-
-even though the more specific MED\_STRICT policy should produce:
-
-
-
-escalate
-
-
-
-The policy resolution logic was therefore redesigned.
-
-
-
-The new process is:
-
-
-
-1\. Match policies by risk
-
-2\. Check each policy's confidence threshold
-
-3\. Ignore policies whose threshold is not satisfied
-
-4\. Collect applicable policies
-
-5\. Select the applicable policy with the highest threshold
-
-6\. Use that policy's action
-
-
-
-This makes the policy behavior more meaningful and deterministic.
-
-
-
-Supported Actions
-
-Allow
-
-
-
-The output is permitted.
-
-
-
-decision = allow
-
-
-
-The final output is:
-
-
-
-null
-
-
-
-because the original output can continue through the system.
-
-
-
-Sanitize
-
-
-
-The output is replaced with a predefined safer message.
-
-
-
-decision = sanitize
-
-
-
-Example:
-
-
-
-This response cannot be shown. Please consult a qualified professional.
-
-Escalate
-
-
-
-The output is sent for human review.
-
-
-
-decision = escalate
-
-
-
-Example:
-
-
-
-Sent for human review
-
-Block
-
-
-
-The output is prevented from being shown.
-
-
-
-decision = block
-
-
-
-Example:
-
-
-
-Output blocked
-
-Example Decisions
-
-
-
-The example input dataset contains several different scenarios.
-
-
-
-ID	Risk	Confidence	Decision
-
-R1	medical	0.96	escalate
-
-R2	medical	0.82	block
-
-R3	medical	0.60	block
-
-R4	financial	0.93	sanitize
-
-R5	financial	0.88	allow
-
-R6	financial	0.81	allow
-
-R7	financial	0.65	block
-
-R8	general	0.92	allow
-
-R9	general	0.75	allow
-
-R10	general	0.55	sanitize
-
-R11	general	0.40	sanitize
-
-R12	general	0.20	sanitize
-
-R13	unknown	0.99	block
-
-R14	unknown	0.50	block
-
-R15	unknown	0.10	block
-
-
-
-This dataset demonstrates all four supported actions.
-
-
-
-Structured Output
-
-
-
-The engine generates structured JSON containing the decision and the policies involved.
-
-
-
-Example:
-
-
-
-{
-
-&#x20;   "id": "R1",
-
-&#x20;   "decision": "escalate",
-
-&#x20;   "applied\_policies": \[
-
-&#x20;       "MED\_STRICT",
-
-&#x20;       "MED\_BLOCK"
-
-&#x20;   ],
-
-&#x20;   "final\_output": "Sent for human review",
-
-&#x20;   "reason": "policy=MED\_STRICT, risk=medical, confidence=0.96"
-
-}
-
-
-
-The output contains:
-
-
-
-id
-
-
-
-Identifies the input being evaluated.
-
-
-
-decision
-
-
-
-The final action selected by the engine.
-
-
-
-Possible values:
-
-
-
-allow
-
-sanitize
-
-escalate
-
-block
-
-applied\_policies
-
-
-
-Lists the policies whose confidence thresholds were satisfied.
-
-
-
-final\_output
-
-
-
-Contains the resulting output behavior.
-
-
-
-reason
-
-
-
-Provides a human-readable explanation of why the decision was selected.
-
-
-
-Automated Testing
-
-
-
-The project includes an automated test suite using pytest.
-
-
-
-The tests cover:
-
-
-
-Allow
-
-Sanitize
-
-Escalate
-
-Block
-
-Unknown risk
-
-Low confidence
-
-Multiple matching policies
-
-
-
-Run the tests using:
-
-
-
-python -m pytest -q
-
-
-
-Current test result:
-
-
-
-7 passed
-
-
-
-The test suite is important because it verifies the policy engine's behavior automatically and helps prevent future changes from breaking the decision logic.
-
-
-
-Running the Project
-
-
-
-From the project root:
-
-
-
-python src/guardrail.py
-
-
-
-The program reads:
-
-
-
-config/policies.json
-
-data/inputs.json
-
-
-
-and generates:
-
-
-
-examples/output.json
-
-Running Tests
-
-
-
-Install pytest:
-
-
-
-python -m pip install pytest
-
-
-
-Run:
-
-
-
-python -m pytest -q
-
-
-
-Expected result:
-
-
-
-7 passed
-
-Design Principles
-
-Separation of configuration and logic
-
-
-
-Policies are stored in JSON instead of being embedded directly into Python.
-
-
-
-This makes policy changes easier to manage.
-
-
-
-Deterministic decisions
-
-
-
-The same policy configuration and input produce the same decision.
-
-
-
-Explicit fallback behavior
-
-
-
-Unknown risks and inputs that do not satisfy any policy threshold fall back to:
-
-
-
-block
-
-Testable core logic
-
-
-
-The main policy processing function can be tested independently:
-
-
-
-process\_inputs(...)
-
-
-
-This allows the decision engine to be tested without relying only on file-based execution.
-
-
-
-Current Limitations
-
-
-
-This project is intentionally lightweight and focuses on policy evaluation.
-
-
-
-It does not currently implement:
-
-
-
-Prompt-injection detection
-
-Jailbreak detection
-
-PII detection
-
-Toxicity classification
-
-Malicious-content classification
-
-LLM inference
-
-Authentication
-
-Distributed execution
-
-Policy versioning
-
-Persistent policy storage
-
-
-
-The system assumes that the risk category and confidence score are already available.
-
-
-
-Therefore, this project is a policy enforcement and decision layer, not a complete AI safety platform.
-
-
-
-Future Improvements
-
-
-
-Potential future improvements include:
-
-
-
-Policy validation
-
-
-
-Validate policy files before execution.
-
-
-
-Input validation
-
-
-
-Validate required fields and confidence values.
-
-
-
-For example:
-
-
-
-0.0 <= confidence <= 1.0
-
-Better action semantics
-
-
-
-Policies currently contain an allowed\_actions list.
-
-
-
-Future versions could define explicit action-selection rules instead of relying on the first configured action when multiple actions are present.
-
-
-
+Therefore, a tie is resolved toward the more restrictive action.
+Input and policy validation
+The engine validates:
+- Required input fields
+- Confidence values
+- Policy structure
+- Policy IDs
+- Duplicate policy IDs
+- Policy confidence thresholds
+- Supported actions
+- Default action
+- Empty policy configurations
+- Invalid data types
+Invalid configurations raise a custom:
+PolicyError
 Command-line interface
+The engine can be executed directly from the terminal:
+guardrail evaluate \
+  --policies config/policies.json \
+  --input data/inputs.json
+The CLI writes the evaluation results to:
+examples/output.json
+Automated testing
+The project currently contains:
+27 tests
+covering normal behavior, validation, boundary conditions, malformed input, policy conflicts, and tie-breaking.
+Current test result:
+27 passed
+Code quality and coverage
+The project uses:
+- Ruff for linting
+- pytest for testing
+- pytest-cov for code coverage
+- GitHub Actions for CI
+Current local coverage:
+77%
+Architecture
+The project follows a small Python package structure:
+ai-guardrail-engine/
+│
+├── src/
+│   └── guardrail/
+│       ├── __init__.py
+│       ├── core.py
+│       └── cli.py
+│
+├── config/
+│   └── policies.json
+│
+├── data/
+│   └── inputs.json
+│
+├── examples/
+│   └── output.json
+│
+├── tests/
+│   └── test_guardrail.py
+│
+├── .github/
+│   └── workflows/
+│       └── tests.yml
+│
+├── pyproject.toml
+├── requirements.txt
+├── README.md
+└── LICENSE
+Core Components
+src/guardrail/core.py
+Contains the main policy engine.
+Responsibilities include:
+- Loading JSON configuration
+- Validating inputs
+- Validating policies
+- Matching policies by risk
+- Evaluating confidence thresholds
+- Resolving applicable policies
+- Selecting the final action
+- Producing structured results
+- Writing JSON output
+The main processing function is:
+process_inputs(policies_data, inputs_data)
+src/guardrail/cli.py
+Provides the command-line interface.
+Example:
+guardrail evaluate \
+  --policies config/policies.json \
+  --input data/inputs.json
+The CLI loads the supplied files, evaluates the inputs, and writes the resulting decisions.
+config/policies.json
+Contains the configurable policy definitions.
+Example:
+{
+  "policies": [
+    {
+      "id": "MED_STRICT",
+      "risk": "medical",
+      "action": "escalate",
+      "min_confidence": 0.95
+    },
+    {
+      "id": "MED_BLOCK",
+      "risk": "medical",
+      "action": "block",
+      "min_confidence": 0.0
+    }
+  ],
+  "default_action": "block"
+}
+Each policy contains:
+Field	Description
+id	Unique policy identifier
+risk	Risk category the policy applies to
+action	Action taken when the policy applies
+min_confidence	Minimum confidence required
 
 
+The configuration also defines:
+"default_action": "block"
+This provides a deterministic fallback when no applicable policy exists.
+Policy Evaluation
+Suppose an input contains:
+{
+  "id": "R1",
+  "risk": "medical",
+  "confidence": 0.96
+}
+The engine finds:
+MED_STRICT
+threshold = 0.95
+action = escalate
+and:
+MED_BLOCK
+threshold = 0.00
+action = block
+Both policies satisfy the confidence threshold:
+0.96 >= 0.95
+0.96 >= 0.00
+The engine therefore selects the policy with the highest applicable threshold:
+MED_STRICT
+and produces:
+escalate
+This allows more specific policies to override broader fallback policies.
+Structured Output
+The engine produces structured JSON results.
+Example:
+{
+  "id": "R1",
+  "decision": "escalate",
+  "applied_policies": [
+    "MED_STRICT",
+    "MED_BLOCK"
+  ],
+  "final_output": "Sent for human review",
+  "reason": "policy=MED_STRICT, risk=medical, confidence=0.96"
+}
+Output fields
+Field	Description
+id	Identifier of the evaluated input
+decision	Final action selected
+applied_policies	Policies whose thresholds were satisfied
+final_output	Resulting output behavior
+reason	Explanation of the policy decision
 
-A CLI could support commands such as:
 
-
-
-python -m guardrail evaluate input.json
-
-Continuous Integration
-
-
-
-GitHub Actions could automatically:
-
-
-
-Install dependencies
-
-Run tests
-
-Validate Python syntax
-
-Check code quality
-
-Report failures on pull requests
-
-Additional tests
-
-
-
-Future tests could cover:
-
-
-
-Invalid confidence values
-
-Missing fields
-
-Invalid actions
-
+Validation
+The engine rejects invalid inputs and policy configurations before evaluation.
+Examples of invalid configurations include:
+Confidence < 0.0
+Confidence > 1.0
+Missing required fields
+Invalid confidence types
 Duplicate policy IDs
-
+Invalid policy actions
+Invalid policy thresholds
+Invalid default actions
+Empty policy lists
 Malformed JSON
+For example:
+PolicyError("Policy 'MED_STRICT' min_confidence must be between 0.0 and 1.0.")
+This prevents invalid configuration from silently producing unsafe decisions.
+Installation
+Clone the repository:
+git clone https://github.com/navya-exe/ai-guardrail-engine.git
+cd ai-guardrail-engine
+Install the project in editable mode:
+python -m pip install -e .
+Install development dependencies:
+python -m pip install -r requirements.txt
+Usage
+Evaluate inputs
+Run:
+guardrail evaluate \
+  --policies config/policies.json \
+  --input data/inputs.json
+Expected output:
+Evaluation complete. Output written to examples/output.json
+The generated results are stored in:
+examples/output.json
+Testing
+Run the complete test suite:
+python -m pytest -q
+Current result:
+27 passed
+Code Coverage
+Run tests with coverage:
+python -m pytest --cov=guardrail --cov-report=term-missing
+Current coverage:
+77%
+Coverage currently includes:
+guardrail/__init__.py    100%
+guardrail/cli.py           0%
+guardrail/core.py         89%
 
-Empty input
-
-Invalid policy configuration
-
-Technologies Used
-
-Python
-
-JSON
-
-pytest
-
-Git
-
-GitHub
-
+TOTAL                     77%
+The CLI currently has limited direct test coverage because the majority of behavior is exercised through the core policy engine.
+Code Quality
+The project uses Ruff for static analysis and formatting checks.
+Run:
+ruff check .
+Expected:
+All checks passed!
+Continuous Integration
+GitHub Actions automatically runs the project's quality checks.
+The CI pipeline performs:
+Checkout repository
+        │
+        ▼
+Set up Python
+        │
+        ▼
+Install dependencies
+        │
+        ▼
+Install project
+        │
+        ▼
+Ruff
+        │
+        ▼
+Pytest + Coverage
+This helps prevent regressions when changes are pushed to the repository or submitted through pull requests.
+Design Principles
+Separation of policy and implementation
+Policy configuration is stored in JSON rather than embedded directly in Python.
+This makes policy changes easier to manage independently from application logic.
+Deterministic decisions
+The same input and policy configuration produce the same decision.
+Explicit fallback behavior
+If no policy matches, or no applicable policy satisfies the confidence threshold, the engine uses:
+block
+by default.
+Fail-fast validation
+Invalid inputs and policy configurations are rejected before policy evaluation begins.
+Testable core logic
+The policy engine can be tested independently through:
+process_inputs(...)
+This keeps the core decision logic independent from the CLI and file system interface.
+Current Limitations
+The current implementation focuses on the policy enforcement layer.
+It does not yet perform:
+- Risk classification from raw text
+- LLM inference
+- Prompt-injection detection
+- Jailbreak detection
+- PII detection
+- Toxicity classification
+- Malicious-content classification
+- Real PII redaction
+- Persistent audit logging
+- Authentication
+- Distributed execution
+- Policy versioning
+The current engine assumes that the risk category and confidence score are already available.
+Roadmap
+The project is being developed incrementally toward a more complete AI safety enforcement layer.
+Planned capabilities include:
+Classification
+Add a pluggable classifier interface:
+classify(text) -> (risk, confidence)
+with:
+- Keyword/regex baseline
+- Structured LLM classification
+Safety detection
+Add detection for:
+- PII
+- Prompt injection
+- Jailbreak patterns
+Sanitization
+Replace the current generic sanitization response with actual redaction of detected sensitive content.
+Audit logging
+Add structured JSONL audit records containing:
+- Timestamp
+- Input ID
+- Selected policy
+- Decision
+- Policy version
+- Policy hash
+API
+Expose the engine through:
+POST /evaluate
+using:
+- FastAPI
+- Pydantic
+Containerization
+Add Docker support for reproducible deployment.
+Evaluation
+Create a labeled evaluation dataset and measure:
+- Precision
+- Recall
+- F1 score
+- Confusion matrix
+- Policy decision accuracy
+Technologies
+- Python
+- JSON
+- pytest
+- pytest-cov
+- Ruff
+- argparse
+- setuptools
+- Git
+- GitHub Actions
 Project Status
-
-
-
-The current implementation includes:
-
-
-
-Policy-based risk evaluation
-
-Confidence threshold handling
-
-Multiple policy resolution
-
-Allow, sanitize, escalate, and block actions
-
-Default blocking behavior
-
-Structured JSON output
-
-Automated tests
-
-Organized project structure
-
-
-
-Test status:
-
-
-
-7 tests passed
-
-Author
-
-
-
-Ch. Navya Naidu
-
-
-
-B.Tech — Computer Science \& Engineering (AI \& ML)
-
+Current implementation includes:
+- Policy-based risk evaluation
+- Confidence threshold handling
+- Input validation
+- Policy validation
+- Duplicate policy detection
+- Deterministic policy resolution
+- Action tie-breaking
+- Allow / sanitize / escalate / block actions
+- Default blocking behavior
+- Structured JSON output
+- Python package structure
+- Editable installation
+- Command-line interface
+- Automated tests
+- Ruff linting
+- Test coverage
+- GitHub Actions CI
+Current test status:
+27 tests passed
+77% code coverage
+Ruff checks passed
