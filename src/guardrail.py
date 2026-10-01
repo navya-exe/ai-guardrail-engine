@@ -3,6 +3,13 @@ import json
 
 VALID_ACTIONS = {"allow", "sanitize", "escalate", "block"}
 
+ACTION_PRIORITY = {
+    "allow": 0,
+    "sanitize": 1,
+    "escalate": 2,
+    "block": 3
+}
+
 
 class PolicyError(ValueError):
     """Raised when guardrail input or policy configuration is invalid."""
@@ -85,7 +92,7 @@ def validate_policies(policies_data):
             "id",
             "risk",
             "min_confidence",
-            "action",
+            "action"
         }
 
         missing = required_fields - policy.keys()
@@ -130,14 +137,14 @@ def validate_policies(policies_data):
 
 
 def match_policies(policies, risk):
-    return [p for p in policies if p.get("risk") == risk]
+    return [policy for policy in policies if policy.get("risk") == risk]
 
 
 def evaluate_policy(policy, confidence):
-    min_conf = policy.get("min_confidence", 1.0)
+    min_confidence = policy.get("min_confidence", 1.0)
     action = policy.get("action")
 
-    if confidence >= min_conf:
+    if confidence >= min_confidence:
         return action
 
     return None
@@ -200,7 +207,10 @@ def process_inputs(policies_data, inputs_data):
             else:
                 selected_policy, action = max(
                     applicable,
-                    key=lambda item: item[0].get("min_confidence", 0.0)
+                    key=lambda item: (
+                        item[0]["min_confidence"],
+                        ACTION_PRIORITY[item[1]]
+                    )
                 )
 
                 decision = action

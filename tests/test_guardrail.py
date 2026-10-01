@@ -278,3 +278,35 @@ def test_invalid_policy_confidence():
         assert False, "Expected PolicyError"
     except PolicyError as exc:
         assert "between 0.0 and 1.0" in str(exc)
+
+def test_tie_breaking_prefers_more_restrictive_action():
+    policies = {
+        "policies": [
+            {
+                "id": "TIE_ALLOW",
+                "risk": "general",
+                "action": "allow",
+                "min_confidence": 0.8
+            },
+            {
+                "id": "TIE_BLOCK",
+                "risk": "general",
+                "action": "block",
+                "min_confidence": 0.8
+            }
+        ],
+        "default_action": "block"
+    }
+
+    inputs = [
+        {
+            "id": "TIE_TEST",
+            "risk": "general",
+            "confidence": 0.9
+        }
+    ]
+
+    result = process_inputs(policies, inputs)[0]
+
+    assert result["decision"] == "block"
+    assert result["reason"].startswith("policy=TIE_BLOCK")
