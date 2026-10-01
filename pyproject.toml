@@ -9,6 +9,9 @@ description = "Policy-based AI guardrail engine"
 requires-python = ">=3.10"
 dependencies = []
 
+[project.scripts]
+guardrail = "guardrail.cli:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
