@@ -6,37 +6,37 @@ POLICIES = {
         {
             "id": "MED_STRICT",
             "risk": "medical",
-            "allowed_actions": ["escalate"],
+            "action": "escalate",
             "min_confidence": 0.95
         },
         {
             "id": "MED_BLOCK",
             "risk": "medical",
-            "allowed_actions": ["block"],
+            "action": "block",
             "min_confidence": 0.0
         },
         {
             "id": "FIN_STRICT",
             "risk": "financial",
-            "allowed_actions": ["sanitize", "escalate"],
+            "action": "sanitize",
             "min_confidence": 0.9
         },
         {
             "id": "FIN_RELAXED",
             "risk": "financial",
-            "allowed_actions": ["allow"],
+            "action": "allow",
             "min_confidence": 0.8
         },
         {
             "id": "GEN_ALLOW",
             "risk": "general",
-            "allowed_actions": ["allow"],
+            "action": "allow",
             "min_confidence": 0.7
         },
         {
             "id": "GEN_SANITIZE",
             "risk": "general",
-            "allowed_actions": ["sanitize"],
+            "action": "sanitize",
             "min_confidence": 0.0
         }
     ],
@@ -207,13 +207,13 @@ def test_duplicate_policy_id():
             {
                 "id": "DUPLICATE",
                 "risk": "general",
-                "allowed_actions": ["allow"],
+                "action": "allow",
                 "min_confidence": 0.5
             },
             {
                 "id": "DUPLICATE",
                 "risk": "medical",
-                "allowed_actions": ["block"],
+                "action": "block",
                 "min_confidence": 0.0
             }
         ],
@@ -246,7 +246,7 @@ def test_invalid_action():
             {
                 "id": "BAD_ACTION",
                 "risk": "general",
-                "allowed_actions": ["something_invalid"],
+                "action": "something_invalid",
                 "min_confidence": 0.5
             }
         ],
@@ -257,7 +257,7 @@ def test_invalid_action():
         process_inputs(policies, [])
         assert False, "Expected PolicyError"
     except PolicyError as exc:
-        assert "invalid actions" in str(exc)
+        assert "invalid action" in str(exc)
 
 
 def test_invalid_policy_confidence():
@@ -266,7 +266,7 @@ def test_invalid_policy_confidence():
             {
                 "id": "BAD_CONF",
                 "risk": "general",
-                "allowed_actions": ["allow"],
+                "action": "allow",
                 "min_confidence": 1.5
             }
         ],

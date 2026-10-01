@@ -85,7 +85,7 @@ def validate_policies(policies_data):
             "id",
             "risk",
             "min_confidence",
-            "allowed_actions",
+            "action",
         }
 
         missing = required_fields - policy.keys()
@@ -120,19 +120,12 @@ def validate_policies(policies_data):
                 f"0.0 and 1.0."
             )
 
-        actions = policy["allowed_actions"]
+        action = policy["action"]
 
-        if not isinstance(actions, list) or not actions:
+        if action not in VALID_ACTIONS:
             raise PolicyError(
-                f"Policy '{policy_id}' must contain at least one action."
-            )
-
-        invalid_actions = set(actions) - VALID_ACTIONS
-
-        if invalid_actions:
-            raise PolicyError(
-                f"Policy '{policy_id}' contains invalid actions: "
-                f"{sorted(invalid_actions)}"
+                f"Policy '{policy_id}' contains invalid action: "
+                f"{action}"
             )
 
 
@@ -142,12 +135,12 @@ def match_policies(policies, risk):
 
 def evaluate_policy(policy, confidence):
     min_conf = policy.get("min_confidence", 1.0)
-    actions = policy.get("allowed_actions", [])
+    action = policy.get("action")
 
     if confidence >= min_conf:
-        return actions
+        return action
 
-    return []
+    return None
 
 
 def final_output_for(action):
@@ -155,7 +148,10 @@ def final_output_for(action):
         return None
 
     if action == "sanitize":
-        return "This response cannot be shown. Please consult a qualified professional."
+        return (
+            "This response cannot be shown. "
+            "Please consult a qualified professional."
+        )
 
     if action == "escalate":
         return "Sent for human review"
@@ -187,10 +183,10 @@ def process_inputs(policies_data, inputs_data):
             applicable = []
 
             for policy in matched:
-                actions = evaluate_policy(policy, confidence)
+                action = evaluate_policy(policy, confidence)
 
-                if actions:
-                    applicable.append((policy, actions))
+                if action is not None:
+                    applicable.append((policy, action))
 
             if not applicable:
                 decision = default_action
@@ -202,12 +198,12 @@ def process_inputs(policies_data, inputs_data):
                 )
 
             else:
-                selected_policy, actions = max(
+                selected_policy, action = max(
                     applicable,
                     key=lambda item: item[0].get("min_confidence", 0.0)
                 )
 
-                decision = actions[0]
+                decision = action
 
                 applied = [
                     policy["id"]
